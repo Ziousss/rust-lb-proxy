@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This file is here to create a fake network inside one single machine
+# This network contains one client, one proxy and three backends. These are all connected to a bridge 
+
+# Exit on error
 set -e
 
 # Import config.sh

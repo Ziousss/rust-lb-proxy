@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This file gets rid of the left over from previous runs.
+
 # Import config.sh
 source "$(dirname "$0")/config.sh"
 
