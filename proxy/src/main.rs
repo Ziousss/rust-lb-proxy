@@ -10,6 +10,7 @@ mod helperfunc;
 
 fn main() -> std::io::Result<()> {
     let backends = ["10.0.0.30:8080", "10.0.0.31:8080", "10.0.0.32:8080"];
+
     let down_backend = Arc::new(Mutex::new(vec![false; backends.len()]));
     let down_for_check = Arc::clone(&down_backend);
 
@@ -50,6 +51,7 @@ fn main() -> std::io::Result<()> {
                     continue;
                 }
             };
+
         connection_count = (used_backend + 1) % backends.len();
 
         println!("Connecting to {:?}", backend.peer_addr());
