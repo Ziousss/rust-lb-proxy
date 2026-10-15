@@ -1,40 +1,38 @@
+use std::net::{Shutdown, TcpListener};
+use std::println;
 use std::sync::{Arc, Mutex};
-use std::{
-    net::{Shutdown, TcpListener},
-    thread::sleep,
-    time::Duration,
-};
 
-mod balancer;
+mod config;
 mod helperfunc;
+use crate::config::config::read_config;
+use crate::helperfunc::balancer::backend_choice;
+use crate::helperfunc::helperfunc::{health_check, ok_or_err};
 
 fn main() -> std::io::Result<()> {
-    let backends = ["10.0.0.30:8080", "10.0.0.31:8080", "10.0.0.32:8080"];
+    let config = read_config("config/config.txt");
+
+    let backends = config.backends;
+    let backends_for_check = backends.clone();
 
     let down_backend = Arc::new(Mutex::new(vec![false; backends.len()]));
     let down_for_check = Arc::clone(&down_backend);
 
-    let listener = TcpListener::bind("10.0.0.20:8080")?;
+    let listener = TcpListener::bind(config.bind)?;
+
     let mut connection_count = 0;
 
     std::thread::spawn(move || {
-        loop {
-            let backend_results = helperfunc::check_backends(&backends);
-            *down_for_check.lock().unwrap() = backend_results;
-
-            println!("Check done.");
-            sleep(Duration::from_secs(5));
-        }
+        health_check(down_for_check, backends_for_check);
     });
 
     for client in listener.incoming() {
         // Make sure client is accepted
-        let mut client = match helperfunc::ok_or_err(client) {
+        let mut client = match ok_or_err(client) {
             Some(c) => c,
             None => continue,
         };
 
-        let mut client_clone = match helperfunc::ok_or_err(client.try_clone()) {
+        let mut client_clone = match ok_or_err(client.try_clone()) {
             Some(c) => c,
             None => continue,
         };
@@ -43,19 +41,18 @@ fn main() -> std::io::Result<()> {
         let start = connection_count;
         connection_count = (connection_count + 1) % backends.len();
 
-        let (mut backend, used_backend) =
-            match balancer::backend_choice(&backends, &down_backend, start) {
-                Some(b) => b,
-                None => {
-                    eprintln!("All backends are down.");
-                    continue;
-                }
-            };
+        let (mut backend, used_backend) = match backend_choice(&backends, &down_backend, start) {
+            Some(b) => b,
+            None => {
+                eprintln!("All backends are down.");
+                continue;
+            }
+        };
 
         connection_count = (used_backend + 1) % backends.len();
 
         println!("Connecting to {:?}", backend.peer_addr());
-        let mut backend_clone = match helperfunc::ok_or_err(backend.try_clone()) {
+        let mut backend_clone = match ok_or_err(backend.try_clone()) {
             Some(c) => c,
             None => continue,
         };
