@@ -1,11 +1,6 @@
 use std::fs::read_to_string;
 
-pub struct Config {
-    pub bind: String,
-    pub backends: Vec<String>,
-    pub connect_timeout_secs: u64,
-    pub check_interval_secs: u64,
-}
+use crate::structs::Config;
 
 pub fn read_config(path: &str) -> Config {
     let text = read_to_string(path).expect("Unable to read config file\n");

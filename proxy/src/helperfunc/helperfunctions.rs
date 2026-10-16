@@ -6,7 +6,7 @@ use std::{
 use tokio::net::TcpStream;
 use tokio::time::{Duration, timeout};
 
-pub async fn check_backends(backends: &[String], secs: u64) -> Vec<bool> {
+pub async fn check_backends(backends: &[String], secs: Duration) -> Vec<bool> {
     let mut result = Vec::new();
 
     for address in backends {
@@ -17,8 +17,8 @@ pub async fn check_backends(backends: &[String], secs: u64) -> Vec<bool> {
     result
 }
 
-pub async fn connect_backend_timeout(address: &String, secs: u64) -> Result<TcpStream, Error> {
-    match timeout(Duration::from_secs(secs), TcpStream::connect(address)).await {
+pub async fn connect_backend_timeout(address: &String, secs: Duration) -> Result<TcpStream, Error> {
+    match timeout(secs, TcpStream::connect(address)).await {
         Ok(result) => result,
         Err(_) => Err(Error::new(ErrorKind::TimedOut, "Connect timed out")),
     }
@@ -31,7 +31,8 @@ pub async fn health_check(
     interval_secs: u64,
 ) {
     loop {
-        let backend_results = check_backends(&backends_for_check, check_timeout).await;
+        let backend_results =
+            check_backends(&backends_for_check, Duration::from_secs(check_timeout)).await;
         *down_for_check.lock().unwrap() = backend_results;
 
         println!("Check done.");
