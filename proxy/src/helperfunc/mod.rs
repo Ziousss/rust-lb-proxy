@@ -1,2 +1,2 @@
 pub mod balancer;
-pub mod helperfunc;
+pub mod helperfunctions;
