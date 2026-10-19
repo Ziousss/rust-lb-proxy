@@ -22,18 +22,11 @@ async fn main() -> std::io::Result<()> {
     let state = ProxyState::new(
         backends,
         Duration::from_secs(config.connect_timeout_secs),
-        Duration::from_secs(config.check_interval_secs),
+        //Duration::from_secs(config.check_interval_secs),
     );
 
-    /*
-    Will implement better health_check function
-    tokio::spawn(health_check(
-        down_for_check,
-        backends_for_check,
-        timeout_secs,
-        interval_secs,
-    ));
-    */
+    // Health check is now passive and done when trying to connect to the backends
+    // Check balancer.rs
 
     let listener = TcpListener::bind(config.bind).await?;
 
